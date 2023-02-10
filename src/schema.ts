@@ -11,7 +11,7 @@ export const typeDefs = gql`
 
     type Post {
         id: ID!
-        tile: String!
+        title: String!
         content: String!
         createdAt: String!
         published: Boolean!
