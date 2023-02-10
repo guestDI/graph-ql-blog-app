@@ -1,10 +1,14 @@
 import { Post } from '@prisma/client'
 import { Context } from '../index'
 
-interface PostCreateArgs {
-    title: string
-    content: string
+interface PostArgs {
+    post: {
+        title: string
+        content: string
+    }
 }
+
+type PostUpdateArgs = PostArgs & { postId: string } 
 
 interface PostPayloadType {
     userErrors: {
@@ -14,7 +18,7 @@ interface PostPayloadType {
 }
 
 export const Mutation = {
-    postCreate: async (_: any, { title, content }: PostCreateArgs, {  prisma }: Context): Promise<PostPayloadType> => {
+    postCreate: async (_: any, { post: {title, content} }: PostArgs, {  prisma }: Context): Promise<PostPayloadType> => {
         if(!title || !content) {
             return {
                 userErrors: [{
@@ -35,6 +39,47 @@ export const Mutation = {
         return {
             userErrors: [],
             post
+        }
+
+    },
+    postUpdate: async (_: any, { postId, post: {title, content} }: PostUpdateArgs, {  prisma }: Context): Promise<PostPayloadType> => {
+        if(!title && !content) {
+            return {
+                userErrors: [{
+                    message: 'Please provide title or content to update a post'
+                }],
+                post: null
+            }
+        } 
+
+        const existingPost = await prisma.post.findUnique({
+            where: {
+                id: Number(postId)
+            }
+        })
+
+        if(!existingPost) {
+            return {
+                userErrors: [{
+                    message: "Post doesn't exist"
+                }],
+                post: null
+            }
+        }
+
+        const updatedPost = await prisma.post.update({
+            data: {
+                title: title ?? existingPost.title,
+                content: content ?? existingPost.content,
+            },
+            where: {
+                id: Number(postId)
+            }
+        })
+
+        return {
+            userErrors: [],
+            post: updatedPost
         }
 
     }
