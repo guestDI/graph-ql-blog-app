@@ -12,9 +12,13 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^4.10.1",
+    "@types/bcryptjs": "^2.4.2",
+    "@types/validator": "^13.7.12",
     "apollo-server": "^3.11.1",
+    "bcryptjs": "^2.4.3",
     "graphql": "^16.6.0",
-    "prisma": "^4.10.1"
+    "prisma": "^4.10.1",
+    "validator": "^13.9.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.20",
