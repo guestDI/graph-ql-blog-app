@@ -1,5 +1,6 @@
 import { Post } from '@prisma/client'
 import { Context } from '../../index'
+import { canUserMutatePost } from '../../utils/canUserMutatePost'
 
 interface PostArgs {
     post: {
@@ -18,7 +19,16 @@ interface PostPayloadType {
 }
 
 export const postResolvers = {
-    postCreate: async (_: any, { post: {title, content} }: PostArgs, {  prisma }: Context): Promise<PostPayloadType> => {
+    postCreate: async (_: any, { post: {title, content} }: PostArgs, {  prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        if(!userInfo) {
+            return {
+                userErrors: [{
+                    message: 'Forbidden access'
+                }],
+                post: null
+            }
+        }
+
         if(!title || !content) {
             return {
                 userErrors: [{
@@ -32,7 +42,7 @@ export const postResolvers = {
             data: {
                 title,
                 content,
-                authorId: 1
+                authorId: userInfo.userId
             }
         })
 
@@ -42,7 +52,24 @@ export const postResolvers = {
         }
 
     },
-    postUpdate: async (_: any, { postId, post: {title, content} }: PostUpdateArgs, {  prisma }: Context): Promise<PostPayloadType> => {
+    postUpdate: async (_: any, { postId, post: {title, content} }: PostUpdateArgs, {  prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        if(!userInfo) {
+            return {
+                userErrors: [{
+                    message: 'Forbidden access'
+                }],
+                post: null
+            }
+        }
+
+        const accessError = await canUserMutatePost({userId: userInfo.userId, postId: Number(postId), prisma})
+        if(accessError) {
+            return {
+                ...accessError,
+                post: null
+            }
+        }
+
         if(!title && !content) {
             return {
                 userErrors: [{
@@ -83,7 +110,16 @@ export const postResolvers = {
         }
 
     },
-    postDelete: async (_: any, { postId }: { postId: string }, {  prisma }: Context): Promise<PostPayloadType> => {
+    postDelete: async (_: any, { postId }: { postId: string }, {  prisma, userInfo }: Context): Promise<PostPayloadType> => {
+        if(!userInfo) {
+            return {
+                userErrors: [{
+                    message: 'Forbidden access'
+                }],
+                post: null
+            }
+        }
+
         if(!postId) {
             return {
                 userErrors: [{

@@ -1,6 +1,8 @@
 import { Context } from '../../index'
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
+import JWT from 'jsonwebtoken'
+import { JSON_SIGNATURE } from '../../keys'
 
 interface SignupArgs {
     email: string
@@ -9,11 +11,16 @@ interface SignupArgs {
     bio: string
 }
 
+interface SigninArgs {
+    email: string
+    password: string
+}
+
 interface UserPayload {
     userErrors: {
         message: string
     }[]
-    user: null
+    token: string | null
 }
 
 export const authResolvers = {
@@ -26,7 +33,7 @@ export const authResolvers = {
                 userErrors: [{
                     message: 'Please provide a valid email'
                 }],
-                user: null
+                token: null
             }
         }
 
@@ -35,7 +42,7 @@ export const authResolvers = {
                 userErrors: [{
                     message: 'Password too short'
                 }],
-                user: null
+                token: null
             }
         }
 
@@ -44,23 +51,79 @@ export const authResolvers = {
                 userErrors: [{
                     message: 'Please provide name name bio'
                 }],
-                user: null
+                token: null
             }
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        await prisma.user.create({
+        const user = await prisma.user.create({
             data: {
                 email,
+                name,
                 password: hashedPassword,
-                name
             }
         })
 
+        await prisma.profile.create({
+            data: {
+                userId: user.id,
+                bio
+            }
+        })
+
+        const token = await JWT.sign(
+            {
+                userId: user.id
+            }, JSON_SIGNATURE, 
+            {
+                expiresIn: 3600000
+            }
+            )
+
         return {
             userErrors: [],
-            user: null
+            token
+        }
+    },
+
+    signin: async (_: any, { email, password }: SigninArgs, {  prisma }: Context): Promise<UserPayload> => {
+        const user = await prisma.user.findUnique({
+            where: {
+                email
+            }
+        })
+
+
+        if(!user) {
+            return {
+                userErrors: [
+                    {
+                        message: "User doesn't exist",
+                    }
+                ],
+                token: null
+            }
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password)
+
+        if(!isPasswordValid){
+            return {
+                userErrors: [
+                    {
+                        message: "Incorrect password",
+                    }
+                ],
+                token: null
+            }
+        }
+
+        return {
+            userErrors: [],
+            token: JWT.sign({userId: user.id}, JSON_SIGNATURE, {
+                expiresIn: 3600000
+            })
         }
     }
 }

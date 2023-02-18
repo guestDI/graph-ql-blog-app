@@ -13,10 +13,12 @@
   "dependencies": {
     "@prisma/client": "^4.10.1",
     "@types/bcryptjs": "^2.4.2",
+    "@types/jsonwebtoken": "^9.0.1",
     "@types/validator": "^13.7.12",
     "apollo-server": "^3.11.1",
     "bcryptjs": "^2.4.3",
     "graphql": "^16.6.0",
+    "jsonwebtoken": "^9.0.0",
     "prisma": "^4.10.1",
     "validator": "^13.9.0"
   },
